@@ -123,13 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper: calculate live count metrics accurately against milestone date
     function getCurrentCounts() {
-        const startDateStr = service.getAnniversaryDate();
-        const start = new Date(startDateStr);
-        const now = new Date();
+        const startEpoch = service.parseMilestoneEpoch(service.getAnniversaryDate());
+        const nowEpoch = service.getSynchronizedNow();
 
-        if (isNaN(start.getTime())) return null;
-
-        const totalMilliseconds = Math.max(0, now.getTime() - start.getTime());
+        const totalMilliseconds = Math.max(0, nowEpoch - startEpoch);
         const totalSeconds = Math.floor(totalMilliseconds / 1000);
         let remaining = totalMilliseconds;
 
@@ -145,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const seconds = Math.floor(remaining / 1000);
 
         return {
-            start,
+            start: new Date(startEpoch),
             days,
             hours,
             minutes,
@@ -173,6 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sync authoritative counter state with Supabase backend
     async function syncSanctuaryCounter() {
         try {
+            await service.syncServerClock();
+
             const cloudSettings = await service.fetchCounterFromSupabase();
             if (cloudSettings && cloudSettings.anniversary_date) {
                 updateRelationshipCounter();
@@ -201,6 +200,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start UI interval
     setInterval(updateRelationshipCounter, 1000);
     updateRelationshipCounter();
+
+    // Immediately synchronize server clock on startup to eliminate device clock skew
+    service.syncServerClock().then(() => {
+        updateRelationshipCounter();
+    });
 
     // Edit Anniversary Date Trigger
     if (editAnniversaryTrigger) {
