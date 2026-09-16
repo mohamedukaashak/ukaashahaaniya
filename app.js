@@ -117,43 +117,92 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3500);
     }
 
-    // --- 6. RELATIONSHIP LIVE COUNTER ---
-    function updateRelationshipCounter() {
+    // --- 6. RELATIONSHIP LIVE COUNTER (SUPABASE BACKEND INTEGRATED) ---
+    let counterRealtimeChannel = null;
+    let counterSnapshotTimer = null;
+
+    // Helper: calculate live count metrics accurately against milestone date
+    function getCurrentCounts() {
         const startDateStr = service.getAnniversaryDate();
         const start = new Date(startDateStr);
         const now = new Date();
 
-        if (isNaN(start.getTime())) return;
+        if (isNaN(start.getTime())) return null;
 
-        // Calculate difference in milliseconds
-        let diff = Math.max(0, now.getTime() - start.getTime());
+        const totalMilliseconds = Math.max(0, now.getTime() - start.getTime());
+        const totalSeconds = Math.floor(totalMilliseconds / 1000);
+        let remaining = totalMilliseconds;
 
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        diff -= days * (1000 * 60 * 60 * 24);
+        const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+        remaining -= days * (1000 * 60 * 60 * 24);
 
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        diff -= hours * (1000 * 60 * 60);
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        remaining -= hours * (1000 * 60 * 60);
 
-        const minutes = Math.floor(diff / (1000 * 60));
-        diff -= minutes * (1000 * 60);
+        const minutes = Math.floor(remaining / (1000 * 60));
+        remaining -= minutes * (1000 * 60);
 
-        const seconds = Math.floor(diff / 1000);
+        const seconds = Math.floor(remaining / 1000);
 
-        if (counterDays) counterDays.textContent = days.toLocaleString();
-        if (counterHours) counterHours.textContent = String(hours).padStart(2, '0');
-        if (counterMins) counterMins.textContent = String(minutes).padStart(2, '0');
-        if (counterSecs) counterSecs.textContent = String(seconds).padStart(2, '0');
+        return {
+            start,
+            days,
+            hours,
+            minutes,
+            seconds,
+            totalSeconds
+        };
+    }
+
+    // Tick the counter on the UI every second
+    function updateRelationshipCounter() {
+        const counts = getCurrentCounts();
+        if (!counts) return;
+
+        if (counterDays) counterDays.textContent = counts.days.toLocaleString();
+        if (counterHours) counterHours.textContent = String(counts.hours).padStart(2, '0');
+        if (counterMins) counterMins.textContent = String(counts.minutes).padStart(2, '0');
+        if (counterSecs) counterSecs.textContent = String(counts.seconds).padStart(2, '0');
 
         if (anniversaryLabel) {
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            anniversaryLabel.textContent = `Since ${start.toLocaleDateString(undefined, options)}`;
+            anniversaryLabel.textContent = `Since ${counts.start.toLocaleDateString(undefined, options)}`;
         }
     }
 
+    // Sync authoritative counter state with Supabase backend
+    async function syncSanctuaryCounter() {
+        try {
+            const cloudSettings = await service.fetchCounterFromSupabase();
+            if (cloudSettings && cloudSettings.anniversary_date) {
+                updateRelationshipCounter();
+            }
+
+            // Real-time synchronization: listen for milestone edits made by partner
+            if (!counterRealtimeChannel && service.isSupabaseConfigured()) {
+                counterRealtimeChannel = service.subscribeToCounterChanges((updated) => {
+                    updateRelationshipCounter();
+                    showToast('Milestone counter synchronized with partner!', '💍');
+                });
+            }
+
+            // Archival snapshot sync: periodically persist counts to Supabase (every 60s)
+            if (!counterSnapshotTimer) {
+                counterSnapshotTimer = setInterval(() => {
+                    const counts = getCurrentCounts();
+                    if (counts) service.saveCountSnapshot(counts);
+                }, 60000);
+            }
+        } catch (err) {
+            console.warn('Supabase counter sync notice:', err);
+        }
+    }
+
+    // Start UI interval
     setInterval(updateRelationshipCounter, 1000);
     updateRelationshipCounter();
 
-    // Edit Anniversary Date
+    // Edit Anniversary Date Trigger
     if (editAnniversaryTrigger) {
         editAnniversaryTrigger.addEventListener('click', () => {
             const current = service.getAnniversaryDate();
@@ -169,14 +218,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('anniversaryForm').addEventListener('submit', (e) => {
+    // Save and sync anniversary milestone to Supabase
+    document.getElementById('anniversaryForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const val = document.getElementById('anniversaryInput').value;
-        if (val) {
-            service.setAnniversaryDate(val);
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origText = submitBtn ? submitBtn.textContent : 'Update Counter';
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Syncing to Cloud...';
+        }
+
+        try {
+            if (val) {
+                const counts = getCurrentCounts();
+                await service.setAnniversaryDate(val, counts);
+                updateRelationshipCounter();
+                closeModal(anniversaryModal);
+                showToast('Anniversary milestone synchronized with Cloud!', '💍');
+            }
+        } catch (err) {
+            console.error('Failed to sync anniversary milestone:', err);
+            showToast('Milestone saved locally.', '💖');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = origText;
+            }
+        }
+    });
+
+    // Auto-save snapshot when tab hides or unloads to never miss counts
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            const counts = getCurrentCounts();
+            if (counts) service.saveCountSnapshot(counts);
+        } else if (document.visibilityState === 'visible' && currentUser) {
             updateRelationshipCounter();
-            closeModal(anniversaryModal);
-            showToast('Anniversary milestone updated!', '💍');
+            syncSanctuaryCounter();
         }
     });
 
@@ -217,6 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMemories();
         renderNotes();
         updateRelationshipCounter();
+
+        // Sync and subscribe to cloud counter
+        syncSanctuaryCounter();
     }
 
     async function handleLockSanctuary() {
@@ -232,6 +315,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (memoriesGrid) memoriesGrid.innerHTML = '';
         if (notesContainer) notesContainer.innerHTML = '';
         gateAuthForm.reset();
+
+        if (counterRealtimeChannel) {
+            if (counterRealtimeChannel.unsubscribe) counterRealtimeChannel.unsubscribe();
+            counterRealtimeChannel = null;
+        }
+        if (counterSnapshotTimer) {
+            clearInterval(counterSnapshotTimer);
+            counterSnapshotTimer = null;
+        }
     }
 
     // Gate login form submission
