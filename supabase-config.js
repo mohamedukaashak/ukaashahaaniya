@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
     LOCAL_MEMORIES: 'ukaasha_haaniya_local_memories',
     LOCAL_NOTES: 'ukaasha_haaniya_local_notes',
     LOCAL_USER: 'ukaasha_haaniya_local_user',
-    ANNIVERSARY_DATE: 'ukaasha_haaniya_anniversary_date'
+    ANNIVERSARY_DATE: 'ukaasha_haaniya_anniversary_date',
+    COUNTER_SNAPSHOT: 'ukaasha_haaniya_counter_snapshot'
 };
 
 // Authorized Couple Credentials
@@ -548,15 +549,185 @@ class RelationshipService {
         });
     }
 
-    // Anniversary date configuration
+    // --- RELATIONSHIP COUNTDOWN / LIVE COUNTER ENGINE (SUPABASE INTEGRATED) ---
+
+    // Synchronous getter for zero-latency local timer initialization
     getAnniversaryDate() {
         const stored = localStorage.getItem(STORAGE_KEYS.ANNIVERSARY_DATE);
         // Default anniversary: June 1, 2024 (editable by couple)
         return stored || '2024-06-01T00:00:00';
     }
 
-    setAnniversaryDate(dateString) {
+    // Get cached counter snapshot data
+    getLocalCounterData() {
+        const date = this.getAnniversaryDate();
+        let snapshot = null;
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.COUNTER_SNAPSHOT);
+            if (raw) snapshot = JSON.parse(raw);
+        } catch (e) {}
+        return snapshot || { anniversary_date: date, milestone_title: 'Our Days of Love' };
+    }
+
+    // Fetch authoritative milestone counter from Supabase backend
+    async fetchCounterFromSupabase() {
+        if (!this.isSupabaseConfigured()) {
+            return this.getLocalCounterData();
+        }
+
+        try {
+            const { data, error } = await this.client
+                .from('relationship_settings')
+                .select('*')
+                .eq('id', 'main_counter')
+                .maybeSingle();
+
+            if (error) {
+                console.warn('Could not query Supabase relationship_settings:', error.message);
+                return this.getLocalCounterData();
+            }
+
+            if (data && data.anniversary_date) {
+                localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, data.anniversary_date);
+                localStorage.setItem(STORAGE_KEYS.COUNTER_SNAPSHOT, JSON.stringify(data));
+                console.log('✅ Synchronized relationship counter from Supabase Cloud:', data.anniversary_date);
+                return data;
+            } else {
+                // Initialize default row in Supabase if table is empty
+                const initialDate = this.getAnniversaryDate();
+                const initialRecord = {
+                    id: 'main_counter',
+                    anniversary_date: new Date(initialDate).toISOString(),
+                    milestone_title: 'Our Days of Love',
+                    total_days: 0,
+                    total_hours: 0,
+                    total_minutes: 0,
+                    total_seconds: 0,
+                    last_synced_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                await this.client
+                    .from('relationship_settings')
+                    .upsert([initialRecord]);
+
+                localStorage.setItem(STORAGE_KEYS.COUNTER_SNAPSHOT, JSON.stringify(initialRecord));
+                return initialRecord;
+            }
+        } catch (err) {
+            console.warn('Network error during Supabase counter retrieval:', err);
+            return this.getLocalCounterData();
+        }
+    }
+
+    // Update anniversary date and sync immediately to Supabase
+    async setAnniversaryDate(dateString, counts = null) {
         localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, dateString);
+
+        const isoDate = new Date(dateString).toISOString();
+        const payload = {
+            id: 'main_counter',
+            anniversary_date: isoDate,
+            milestone_title: 'Our Days of Love',
+            total_days: counts ? counts.days : 0,
+            total_hours: counts ? counts.hours : 0,
+            total_minutes: counts ? counts.minutes : 0,
+            total_seconds: counts ? counts.totalSeconds : 0,
+            last_synced_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        localStorage.setItem(STORAGE_KEYS.COUNTER_SNAPSHOT, JSON.stringify(payload));
+
+        if (this.isSupabaseConfigured()) {
+            try {
+                const currentUser = await this.getCurrentUser();
+                if (currentUser && currentUser.id) {
+                    payload.user_id = currentUser.id;
+                }
+
+                const { data, error } = await this.client
+                    .from('relationship_settings')
+                    .upsert([payload])
+                    .select();
+
+                if (error) {
+                    console.warn('Error syncing anniversary date to Supabase:', error.message);
+                } else {
+                    console.log('✅ Anniversary milestone synchronized with Supabase backend.');
+                    return data ? data[0] : payload;
+                }
+            } catch (err) {
+                console.warn('Supabase counter update exception:', err);
+            }
+        }
+
+        return payload;
+    }
+
+    // Save live count snapshot to Supabase so counts are permanently archived
+    async saveCountSnapshot(counts) {
+        if (!counts) return;
+
+        const date = this.getAnniversaryDate();
+        const snapshot = {
+            id: 'main_counter',
+            anniversary_date: new Date(date).toISOString(),
+            total_days: counts.days,
+            total_hours: counts.hours,
+            total_minutes: counts.minutes,
+            total_seconds: counts.totalSeconds,
+            last_synced_at: new Date().toISOString()
+        };
+
+        localStorage.setItem(STORAGE_KEYS.COUNTER_SNAPSHOT, JSON.stringify(snapshot));
+
+        if (this.isSupabaseConfigured()) {
+            try {
+                await this.client
+                    .from('relationship_settings')
+                    .update({
+                        total_days: counts.days,
+                        total_hours: counts.hours,
+                        total_minutes: counts.minutes,
+                        total_seconds: counts.totalSeconds,
+                        last_synced_at: new Date().toISOString()
+                    })
+                    .eq('id', 'main_counter');
+            } catch (err) {
+                // Silently keep working offline
+            }
+        }
+    }
+
+    // Realtime channel listener: when either partner changes the date, update live
+    subscribeToCounterChanges(onUpdateCallback) {
+        if (!this.isSupabaseConfigured() || !this.client) return null;
+
+        try {
+            const channel = this.client
+                .channel('realtime:relationship_counter')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'relationship_settings' },
+                    (payload) => {
+                        if (payload.new && payload.new.anniversary_date) {
+                            localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, payload.new.anniversary_date);
+                            localStorage.setItem(STORAGE_KEYS.COUNTER_SNAPSHOT, JSON.stringify(payload.new));
+                            console.log('🔔 Realtime counter update received from partner:', payload.new.anniversary_date);
+                            if (typeof onUpdateCallback === 'function') {
+                                onUpdateCallback(payload.new);
+                            }
+                        }
+                    }
+                )
+                .subscribe();
+
+            return channel;
+        } catch (err) {
+            console.warn('Failed to subscribe to realtime counter updates:', err);
+            return null;
+        }
     }
 }
 
