@@ -165,8 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (counterSecs) counterSecs.textContent = String(counts.seconds).padStart(2, '0');
 
         if (anniversaryLabel) {
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            anniversaryLabel.textContent = `Since ${counts.start.toLocaleDateString(undefined, options)}`;
+            const dateStr = counts.start.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+            anniversaryLabel.textContent = `Since ${dateStr} • 7:00 PM`;
         }
     }
 
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                 input.value = iso;
             } catch (e) {
-                input.value = '2024-06-01T00:00';
+                input.value = '2026-09-13T19:00';
             }
             openModal(anniversaryModal);
         });
