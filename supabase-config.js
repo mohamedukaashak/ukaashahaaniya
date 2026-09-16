@@ -22,8 +22,10 @@ const AUTHORIZED_CREDENTIALS = [
     }
 ];
 
-// Permanent relationship milestone date: September 13, 2026, 7:00 PM (19:00)
-const PERMANENT_ANNIVERSARY_DATE = '2026-09-13T19:00:00';
+// Permanent relationship milestone date: September 13, 2026, 7:00 PM IST (UTC+05:30)
+// Universal epoch ensures every device on Earth evaluates the exact same second
+const PERMANENT_ANNIVERSARY_DATE = '2026-09-13T19:00:00+05:30';
+const MILESTONE_CACHE_VERSION = 'v3_unified_sep13_2026_ist';
 
 // Curated starter memories with aesthetic romantic photography
 const STARTER_MEMORIES = [
@@ -110,6 +112,7 @@ class RelationshipService {
         this.client = null;
         this.config = this.loadConfig();
         this.authStateListeners = [];
+        this.serverClockSkewMs = 0;
         this.initClient();
         this.ensureLocalSeedData();
     }
@@ -177,9 +180,11 @@ class RelationshipService {
         if (!localStorage.getItem(STORAGE_KEYS.LOCAL_NOTES)) {
             localStorage.setItem(STORAGE_KEYS.LOCAL_NOTES, JSON.stringify(STARTER_NOTES));
         }
-        const currentAnniversary = localStorage.getItem(STORAGE_KEYS.ANNIVERSARY_DATE);
-        if (!currentAnniversary || currentAnniversary.startsWith('2024-06-01')) {
+        // Force upgrade all cached devices to the unified permanent timestamp
+        if (localStorage.getItem('ukaasha_haaniya_milestone_version') !== MILESTONE_CACHE_VERSION) {
             localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, PERMANENT_ANNIVERSARY_DATE);
+            localStorage.setItem('ukaasha_haaniya_milestone_version', MILESTONE_CACHE_VERSION);
+            localStorage.removeItem(STORAGE_KEYS.COUNTER_SNAPSHOT);
         }
     }
 
@@ -558,11 +563,47 @@ class RelationshipService {
 
     // --- RELATIONSHIP COUNTDOWN / LIVE COUNTER ENGINE (SUPABASE INTEGRATED) ---
 
+    // Sync clock difference between local device and server
+    async syncServerClock() {
+        try {
+            const start = performance.now();
+            const pingUrl = this.isSupabaseConfigured() ? `${this.config.url}/auth/v1/health` : 'favicon.svg';
+            const res = await fetch(pingUrl, { method: 'HEAD', cache: 'no-store' });
+            const end = performance.now();
+            const latency = (end - start) / 2;
+            const serverDate = res.headers.get('date');
+            if (serverDate) {
+                const serverEpoch = new Date(serverDate).getTime() + latency;
+                this.serverClockSkewMs = serverEpoch - Date.now();
+                console.log('⏱️ Synchronized server clock skew across devices:', this.serverClockSkewMs, 'ms');
+            }
+        } catch (err) {
+            // Offline fallback
+        }
+    }
+
+    // Get current time adjusted by server clock skew so all devices match perfectly
+    getSynchronizedNow() {
+        return Date.now() + this.serverClockSkewMs;
+    }
+
+    // Parse any milestone date string into an exact global epoch millisecond
+    parseMilestoneEpoch(dateStr) {
+        const target = dateStr || this.getAnniversaryDate();
+        let clean = String(target).trim();
+        // If string lacks timezone offset (e.g. '2026-09-13T19:00:00'), attach canonical +05:30
+        if (!clean.endsWith('Z') && !clean.includes('+') && !/T\d{2}:\d{2}(:\d{2})?-\d{2}/.test(clean)) {
+            clean += '+05:30';
+        }
+        const epoch = Date.parse(clean);
+        return isNaN(epoch) ? Date.parse(PERMANENT_ANNIVERSARY_DATE) : epoch;
+    }
+
     // Synchronous getter for zero-latency local timer initialization
     getAnniversaryDate() {
         const stored = localStorage.getItem(STORAGE_KEYS.ANNIVERSARY_DATE);
-        // If not set or containing previous placeholder 2024 date, permanently set to September 13, 2026, 7:00 PM
-        if (!stored || stored.startsWith('2024-06-01')) {
+        // If not set, containing previous placeholder 2024 date, or missing timezone offset:
+        if (!stored || stored.startsWith('2024-06-01') || !stored.includes('+')) {
             localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, PERMANENT_ANNIVERSARY_DATE);
             return PERMANENT_ANNIVERSARY_DATE;
         }
@@ -599,9 +640,9 @@ class RelationshipService {
             }
 
             if (data && data.anniversary_date) {
-                // If previous 2024 placeholder was present in database, permanently upgrade it to September 13, 2026, 7:00 PM
-                if (data.anniversary_date.startsWith('2024-06-01')) {
-                    data.anniversary_date = new Date(PERMANENT_ANNIVERSARY_DATE).toISOString();
+                // If previous 2024 placeholder was present in database or missing offset, upgrade to permanent IST timestamp
+                if (data.anniversary_date.startsWith('2024-06-01') || !data.anniversary_date.includes('+')) {
+                    data.anniversary_date = PERMANENT_ANNIVERSARY_DATE;
                     await this.client
                         .from('relationship_settings')
                         .update({ anniversary_date: data.anniversary_date, updated_at: new Date().toISOString() })
@@ -616,7 +657,7 @@ class RelationshipService {
                 const initialDate = this.getAnniversaryDate();
                 const initialRecord = {
                     id: 'main_counter',
-                    anniversary_date: new Date(initialDate).toISOString(),
+                    anniversary_date: initialDate,
                     milestone_title: 'Our Days of Love',
                     total_days: 0,
                     total_hours: 0,
@@ -641,12 +682,16 @@ class RelationshipService {
 
     // Update anniversary date and sync immediately to Supabase
     async setAnniversaryDate(dateString, counts = null) {
-        localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, dateString);
+        let cleanDate = (dateString || '').trim();
+        if (!cleanDate.endsWith('Z') && !cleanDate.includes('+') && !/T\d{2}:\d{2}(:\d{2})?-\d{2}/.test(cleanDate)) {
+            cleanDate += '+05:30';
+        }
 
-        const isoDate = new Date(dateString).toISOString();
+        localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, cleanDate);
+
         const payload = {
             id: 'main_counter',
-            anniversary_date: isoDate,
+            anniversary_date: cleanDate,
             milestone_title: 'Our Days of Love',
             total_days: counts ? counts.days : 0,
             total_hours: counts ? counts.hours : 0,
