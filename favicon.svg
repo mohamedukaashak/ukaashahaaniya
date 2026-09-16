@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- Rich Golden Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C59B6D" />
+      <stop offset="35%" stop-color="#E8C9A3" />
+      <stop offset="70%" stop-color="#B88A58" />
+      <stop offset="100%" stop-color="#8F6438" />
+    </linearGradient>
+
+    <!-- Warm Alabaster Inner Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#FDFBF9" />
+      <stop offset="100%" stop-color="#F5EFE9" />
+    </linearGradient>
+
+    <!-- Rose Gold Accent Gradient -->
+    <linearGradient id="roseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E59990" />
+      <stop offset="100%" stop-color="#C97368" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Circle Frame -->
+  <circle cx="50" cy="50" r="47" fill="url(#bgGrad)" stroke="url(#goldGrad)" stroke-width="3" />
+  
+  <!-- Subtle Filigree Ring -->
+  <circle cx="50" cy="50" r="42" fill="none" stroke="#D98880" stroke-width="0.75" stroke-opacity="0.4" stroke-dasharray="2 1.5" />
+
+  <!-- Monogram: U&H -->
+  <text x="50" y="44" 
+        text-anchor="middle" 
+        dominant-baseline="central" 
+        font-family="'Cormorant Garamond', 'Playfair Display', Georgia, serif" 
+        font-size="33" 
+        font-weight="700" 
+        fill="url(#goldGrad)" 
+        letter-spacing="0.5">
+    U<tspan font-size="23" font-weight="600" fill="url(#roseGrad)" dx="0.5" dy="-1">&amp;</tspan><tspan dx="0.5">H</tspan>
+  </text>
+  
+  <!-- Delicate Heart Accent -->
+  <path d="M50 74 C49 73 43 68 43 64.5 C43 61.8 45.3 59.8 47.8 59.8 C49 59.8 50 60.5 50 60.5 C50 60.5 51 59.8 52.2 59.8 C54.7 59.8 57 61.8 57 64.5 C57 68 51 73 50 74 Z" 
+        fill="url(#roseGrad)" />
+</svg>
