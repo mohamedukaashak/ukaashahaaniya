@@ -22,6 +22,9 @@ const AUTHORIZED_CREDENTIALS = [
     }
 ];
 
+// Permanent relationship milestone date: September 13, 2026, 7:00 PM (19:00)
+const PERMANENT_ANNIVERSARY_DATE = '2026-09-13T19:00:00';
+
 // Curated starter memories with aesthetic romantic photography
 const STARTER_MEMORIES = [
     {
@@ -173,6 +176,10 @@ class RelationshipService {
         }
         if (!localStorage.getItem(STORAGE_KEYS.LOCAL_NOTES)) {
             localStorage.setItem(STORAGE_KEYS.LOCAL_NOTES, JSON.stringify(STARTER_NOTES));
+        }
+        const currentAnniversary = localStorage.getItem(STORAGE_KEYS.ANNIVERSARY_DATE);
+        if (!currentAnniversary || currentAnniversary.startsWith('2024-06-01')) {
+            localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, PERMANENT_ANNIVERSARY_DATE);
         }
     }
 
@@ -554,8 +561,12 @@ class RelationshipService {
     // Synchronous getter for zero-latency local timer initialization
     getAnniversaryDate() {
         const stored = localStorage.getItem(STORAGE_KEYS.ANNIVERSARY_DATE);
-        // Default anniversary: June 1, 2024 (editable by couple)
-        return stored || '2024-06-01T00:00:00';
+        // If not set or containing previous placeholder 2024 date, permanently set to September 13, 2026, 7:00 PM
+        if (!stored || stored.startsWith('2024-06-01')) {
+            localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, PERMANENT_ANNIVERSARY_DATE);
+            return PERMANENT_ANNIVERSARY_DATE;
+        }
+        return stored;
     }
 
     // Get cached counter snapshot data
@@ -588,12 +599,20 @@ class RelationshipService {
             }
 
             if (data && data.anniversary_date) {
+                // If previous 2024 placeholder was present in database, permanently upgrade it to September 13, 2026, 7:00 PM
+                if (data.anniversary_date.startsWith('2024-06-01')) {
+                    data.anniversary_date = new Date(PERMANENT_ANNIVERSARY_DATE).toISOString();
+                    await this.client
+                        .from('relationship_settings')
+                        .update({ anniversary_date: data.anniversary_date, updated_at: new Date().toISOString() })
+                        .eq('id', 'main_counter');
+                }
                 localStorage.setItem(STORAGE_KEYS.ANNIVERSARY_DATE, data.anniversary_date);
                 localStorage.setItem(STORAGE_KEYS.COUNTER_SNAPSHOT, JSON.stringify(data));
                 console.log('✅ Synchronized relationship counter from Supabase Cloud:', data.anniversary_date);
                 return data;
             } else {
-                // Initialize default row in Supabase if table is empty
+                // Initialize permanent milestone record in Supabase
                 const initialDate = this.getAnniversaryDate();
                 const initialRecord = {
                     id: 'main_counter',
