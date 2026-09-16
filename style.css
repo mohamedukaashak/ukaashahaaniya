@@ -1615,20 +1615,6 @@ h1, h2, h3, h4, .serif {
         height: 220px;
     }
 
-    .gate-card {
-        padding: 28px 16px 20px;
-        width: 96%;
-    }
-
-    .gate-title {
-        font-size: clamp(1.6rem, 6.5vw, 2rem);
-    }
-
-    .gate-desc {
-        font-size: 0.86rem;
-        margin-bottom: 20px;
-    }
-
     .toast-container {
         left: 14px;
         right: 14px;
@@ -1660,21 +1646,18 @@ h1, h2, h3, h4, .serif {
     .counter-label {
         font-size: 0.65rem;
     }
-
-    .gate-card {
-        padding: 24px 12px 18px;
-    }
 }
 
 /* ==============================================================================
-   STRICT PRIVATE GATE / LOCK SCREEN (WHITE/ALABASTER THEME)
+   STRICT PRIVATE GATE / LOCK SCREEN (WARM ALABASTER THEME)
    ============================================================================== */
 .private-gate-screen {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100vw;
-    height: 100vh;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--bg-main);
     background-image: 
         radial-gradient(circle at 15% 20%, rgba(217, 136, 128, 0.08) 0%, transparent 45%),
@@ -1684,10 +1667,13 @@ h1, h2, h3, h4, .serif {
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    padding: 24px;
+    padding: max(24px, env(safe-area-inset-top, 24px)) max(20px, env(safe-area-inset-right, 20px)) max(24px, env(safe-area-inset-bottom, 24px)) max(20px, env(safe-area-inset-left, 20px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     opacity: 1;
     visibility: visible;
     transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s;
+    box-sizing: border-box;
 }
 
 .private-gate-screen.unlocked {
@@ -1697,17 +1683,19 @@ h1, h2, h3, h4, .serif {
 }
 
 .gate-card {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.94);
     border: 1px solid var(--border-medium);
     border-radius: var(--radius-lg);
     max-width: 480px;
     width: 100%;
-    padding: 44px 36px 36px;
+    margin: auto; /* enables perfect vertical & horizontal centering and prevents top-clipping on short/scrolled viewports */
+    padding: 42px 36px 36px;
     text-align: center;
     box-shadow: 0 20px 50px rgba(30, 23, 20, 0.08), 0 4px 20px rgba(197, 155, 109, 0.1);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     position: relative;
+    box-sizing: border-box;
     animation: gateCardPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1719,43 +1707,75 @@ h1, h2, h3, h4, .serif {
 .gate-lock-badge {
     position: relative;
     display: inline-block;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+}
+
+.gate-monogram {
+    width: 58px;
+    height: 58px;
+    font-size: 1.45rem;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .gate-title {
     font-family: var(--font-serif);
-    font-size: 2.2rem;
+    font-size: 2.15rem;
     color: var(--text-primary);
     letter-spacing: 0.04em;
+    margin-top: 12px;
     margin-bottom: 12px;
+    line-height: 1.25;
 }
 
 .gate-title span {
     color: var(--accent-rose);
-    font-size: 1.1em;
+    font-size: 1.05em;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .gate-desc {
     color: var(--text-secondary);
     font-size: 0.92rem;
     line-height: 1.6;
-    margin-bottom: 28px;
+    margin-bottom: 26px;
     font-weight: 300;
 }
 
 .gate-form {
     text-align: left;
+    width: 100%;
+}
+
+.gate-form .form-group {
+    margin-bottom: 18px;
+}
+
+.gate-password-group {
+    margin-bottom: 24px;
 }
 
 .gate-form .form-label {
     color: var(--text-primary);
     font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.86rem;
 }
 
 .gate-form .form-input {
+    width: 100%;
+    box-sizing: border-box;
     background: rgba(251, 249, 245, 0.95);
     border: 1px solid var(--border-subtle);
     color: var(--text-primary);
+    font-size: 1rem;
+    padding: 13px 16px;
+    border-radius: 12px;
+    transition: var(--transition-smooth);
 }
 
 .gate-form .form-input:focus {
@@ -1766,12 +1786,212 @@ h1, h2, h3, h4, .serif {
 
 .gate-submit-btn {
     width: 100%;
-    padding: 13px 20px;
+    min-height: 48px;
+    padding: 14px 20px;
     font-size: 0.98rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+/* ==============================================================================
+   GATE / LOGIN SCREEN RESPONSIVE BREAKPOINTS
+   ============================================================================== */
+
+/* Tablets & Mobile (<= 600px) */
+@media (max-width: 600px) {
+    .private-gate-screen {
+        padding: max(18px, env(safe-area-inset-top, 18px)) max(16px, env(safe-area-inset-right, 16px)) max(18px, env(safe-area-inset-bottom, 18px)) max(16px, env(safe-area-inset-left, 16px));
+    }
+
+    .gate-card {
+        padding: 32px 22px 26px;
+        border-radius: 20px;
+        max-width: 100%;
+        box-shadow: 0 14px 38px rgba(30, 23, 20, 0.08), 0 2px 14px rgba(197, 155, 109, 0.08);
+    }
+
+    .gate-monogram {
+        width: 52px;
+        height: 52px;
+        font-size: 1.3rem;
+    }
+
+    .gate-title {
+        font-size: clamp(1.55rem, 6.2vw, 1.95rem);
+        margin-top: 10px;
+        margin-bottom: 10px;
+        line-height: 1.25;
+    }
+
+    .gate-desc {
+        font-size: 0.86rem;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    .gate-form .form-group {
+        margin-bottom: 15px;
+    }
+
+    .gate-password-group {
+        margin-bottom: 20px;
+    }
+
+    .gate-form .form-label {
+        font-size: 0.82rem;
+        margin-bottom: 5px;
+    }
+
+    .gate-form .form-input {
+        font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+        padding: 13px 14px;
+        min-height: 48px;
+        border-radius: 11px;
+    }
+
+    .gate-submit-btn {
+        min-height: 48px;
+        padding: 13px 16px;
+        font-size: 0.94rem;
+        gap: 8px;
+        border-radius: 11px;
+    }
+}
+
+/* Compact Smartphones (<= 400px - e.g. iPhone SE, Pixel, Galaxy) */
+@media (max-width: 400px) {
+    .private-gate-screen {
+        padding: max(14px, env(safe-area-inset-top, 14px)) max(12px, env(safe-area-inset-right, 12px)) max(14px, env(safe-area-inset-bottom, 14px)) max(12px, env(safe-area-inset-left, 12px));
+    }
+
+    .gate-card {
+        padding: 26px 16px 20px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(30, 23, 20, 0.07);
+    }
+
+    .gate-monogram {
+        width: 46px;
+        height: 46px;
+        font-size: 1.15rem;
+    }
+
+    .gate-title {
+        font-size: 1.45rem;
+        letter-spacing: 0.02em;
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+
+    .gate-desc {
+        font-size: 0.81rem;
+        line-height: 1.45;
+        margin-bottom: 16px;
+    }
+
+    .gate-form .form-group {
+        margin-bottom: 13px;
+    }
+
+    .gate-password-group {
+        margin-bottom: 18px;
+    }
+
+    .gate-form .form-label {
+        font-size: 0.78rem;
+    }
+
+    .gate-form .form-input {
+        font-size: 16px;
+        padding: 12px 12px;
+        min-height: 46px;
+    }
+
+    .gate-submit-btn {
+        min-height: 46px;
+        padding: 12px 14px;
+        font-size: 0.88rem;
+        gap: 6px;
+    }
+
+    .gate-submit-btn svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+    }
+}
+
+/* Narrowest Smartphones (<= 330px - e.g. Galaxy Fold outer screen) */
+@media (max-width: 330px) {
+    .gate-card {
+        padding: 22px 12px 18px;
+    }
+
+    .gate-title {
+        font-size: 1.3rem;
+    }
+
+    .gate-submit-btn {
+        font-size: 0.82rem;
+        padding: 11px 10px;
+    }
+}
+
+/* Landscape / Short Screens (e.g. mobile rotated horizontally or with virtual keyboard open) */
+@media (max-height: 600px) {
+    .private-gate-screen {
+        align-items: flex-start;
+        padding-top: max(12px, env(safe-area-inset-top, 12px));
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    }
+
+    .gate-card {
+        margin-top: 8px;
+        margin-bottom: 8px;
+        padding: 20px 18px 18px;
+    }
+
+    .gate-monogram {
+        width: 40px;
+        height: 40px;
+        font-size: 1.05rem;
+    }
+
+    .gate-title {
+        font-size: 1.35rem;
+        margin-top: 6px;
+        margin-bottom: 6px;
+    }
+
+    .gate-desc {
+        font-size: 0.8rem;
+        line-height: 1.4;
+        margin-bottom: 14px;
+    }
+
+    .gate-form .form-group {
+        margin-bottom: 10px;
+    }
+
+    .gate-password-group {
+        margin-bottom: 14px;
+    }
+
+    .gate-form .form-input {
+        padding: 10px 12px;
+        min-height: 42px;
+    }
+
+    .gate-submit-btn {
+        min-height: 44px;
+        padding: 11px 14px;
+    }
 }
 
 /* Unlocked container animation */
