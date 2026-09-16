@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UKAASHA & HAANIYA — Our Private Sanctuary</title>
+    <meta name="description" content="A private romantic sanctuary and memory vault for Ukaasha & Haaniya. Access strictly restricted to authorized partners.">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Supabase Official JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <!-- ==============================================================================
+         STRICT PRIVATE GATE / LOCK SCREEN
+         Public visitors CANNOT pass this screen without logging in!
+         ============================================================================== -->
+    <div id="privateGateScreen" class="private-gate-screen">
+        <div class="gate-card">
+            <div class="gate-lock-badge">
+                <div class="nav-monogram" style="width: 58px; height: 58px; font-size: 1.5rem;">U&H</div>
+            </div>
+
+            <h1 class="gate-title" style="margin-top: 12px;">UKAASHA <span>&hearts;</span> HAANIYA</h1>
+            <p class="gate-desc">
+                This sanctuary contains our personal relationship milestones, private photo memories, and intimate love letters.
+                Public access is forbidden. Please verify your identity to enter.
+            </p>
+
+            <form id="gateAuthForm" class="gate-form">
+                <div class="form-group">
+                    <label class="form-label" for="gateEmail">Email Address</label>
+                    <input type="email" id="gateEmail" class="form-input" placeholder="ukaashahaaniya@gmail.com" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label class="form-label" for="gatePassword">Password</label>
+                    <input type="password" id="gatePassword" class="form-input" placeholder="••••••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-rose gate-submit-btn" id="gateSubmitBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>Unlock Private Sanctuary</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==============================================================================
+         UNLOCKED PRIVATE WEBSITE CONTENT
+         Completely hidden from public until authenticated!
+         ============================================================================== -->
+    <div id="unlockedApp" class="unlocked-app" style="display: none;">
+        <!-- Navigation Bar -->
+        <nav class="navbar" id="navbar">
+            <a href="#hero" class="nav-brand">
+                <div class="nav-monogram">U&H</div>
+                <div class="nav-title">Ukaasha <span>&hearts;</span> Haaniya</div>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="#story" class="nav-link">Our Story</a></li>
+                <li><a href="#memories" class="nav-link">Memories</a></li>
+                <li><a href="#notes" class="nav-link">Love Notes</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <!-- Connection Status Badge -->
+                <div class="auth-status-pill" id="vaultStatusPill" title="Click to view database settings">
+                    <span class="auth-dot" id="authDot"></span>
+                    <span id="authStatusText">Private Vault</span>
+                </div>
+
+                <!-- Supabase Cloud Setup Button -->
+                <button class="icon-btn" id="openSettingsBtn" title="Supabase Cloud Settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+
+                <!-- Strict Lock Button -->
+                <button class="btn btn-primary btn-sm" id="authActionBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>Lock</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Hero Section -->
+            <section class="hero" id="hero">
+                <div class="hero-tag">A Sacred Sanctuary For Two</div>
+                <h1 class="hero-names">UKAASHA <span class="heart-symbol">&hearts;</span> HAANIYA</h1>
+                <p class="hero-subtitle">
+                    "In a universe of billions of souls, mine recognized yours in a heartbeat. 
+                    Here is our private haven — every whisper, every sunset, and every promise kept."
+                </p>
+
+                <!-- Live Relationship Counter -->
+                <div class="counter-wrapper">
+                    <div class="counter-header">
+                        <h2 class="counter-title">Our Days of Love</h2>
+                        <div class="counter-date-badge" id="editAnniversaryTrigger" title="Click to customize anniversary date">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span id="anniversaryLabel">Since June 1, 2024</span>
+                        </div>
+                    </div>
+
+                    <div class="counter-grid">
+                        <div class="counter-card">
+                            <span class="counter-num" id="counterDays">0</span>
+                            <span class="counter-label">Days</span>
+                        </div>
+                        <div class="counter-card">
+                            <span class="counter-num" id="counterHours">0</span>
+                            <span class="counter-label">Hours</span>
+                        </div>
+                        <div class="counter-card">
+                            <span class="counter-num" id="counterMins">0</span>
+                            <span class="counter-label">Minutes</span>
+                        </div>
+                        <div class="counter-card">
+                            <span class="counter-num" id="counterSecs">0</span>
+                            <span class="counter-label">Seconds</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Action Buttons -->
+                <div class="hero-actions">
+                    <a href="#memories" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        Explore Memories
+                    </a>
+                    <a href="#notes" class="btn btn-outline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        Read Love Notes
+                    </a>
+                    <button class="btn btn-rose" id="heroAddMemoryBtn">
+                        <span>+ Add New Moment</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Our Story & Relationship Section -->
+            <section class="section" id="story">
+                <div class="section-header">
+                    <span class="section-tag">About Our Bond</span>
+                    <h2 class="section-title">The Symphony of Us</h2>
+                    <p class="section-desc">
+                        Every love story is beautiful, but ours is our absolute favorite. Built on mutual respect, endless laughter, and boundless affection.
+                    </p>
+                </div>
+
+                <div class="story-grid">
+                    <!-- Story Lead Card -->
+                    <div class="story-lead-card">
+                        <p class="story-quote">
+                            "Loving you is as effortless as breathing, yet profound enough to anchor my whole soul."
+                        </p>
+                        <p class="story-narrative">
+                            We started with simple conversations that turned into late night talks, inside jokes that nobody else understands, and a warmth that makes the rest of the world feel calm. No matter where life takes us, we always find our way back to each other’s embrace.
+                        </p>
+                        <div class="story-signature">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.95rem;">Always & Forever,</div>
+                                <div class="signature-name">Ukaasha & Haaniya</div>
+                            </div>
+                            <div style="font-size: 2.2rem; color: var(--accent-rose);">&#10084;</div>
+                        </div>
+                    </div>
+
+                    <!-- Relationship Milestones Timeline -->
+                    <div class="timeline-container">
+                        <div class="timeline-item">
+                            <div class="timeline-bullet"></div>
+                            <div class="timeline-date">The Beginning</div>
+                            <h3 class="timeline-title">The First Glimpse & Spark</h3>
+                            <p class="timeline-text">Where paths crossed and destiny smiled upon us. A single spark that ignited a flame that will never fade.</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-bullet"></div>
+                            <div class="timeline-date">Our Heartbeat</div>
+                            <h3 class="timeline-title">The Day We Chose Each Other</h3>
+                            <p class="timeline-text">When words turned into lifelong commitments. Hand in hand, stepping boldly into tomorrow as one heart.</p>
+                        </div>
+
+                        <div class="timeline-item">
+                            <div class="timeline-bullet"></div>
+                            <div class="timeline-date">Our Journey Today</div>
+                            <h3 class="timeline-title">Creating Our Everlasting Home</h3>
+                            <p class="timeline-text">Collecting memories like seashells, writing letters of love, and looking forward to thousands more sunsets together.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Memories (Image Storage) Section -->
+            <section class="section" id="memories">
+                <div class="section-header">
+                    <span class="section-tag">Visual Treasures</span>
+                    <h2 class="section-title">Our Cherished Moments</h2>
+                    <p class="section-desc">
+                        Photographs freeze moments that our hearts want to hold forever. Upload and revisit the memories that define our journey.
+                    </p>
+                </div>
+
+                <!-- Toolbar with Filter Tabs and Add Button -->
+                <div class="memories-toolbar">
+                    <div class="category-tabs" id="memoryFilterTabs">
+                        <button class="tab-btn active" data-filter="All">All Moments</button>
+                        <button class="tab-btn" data-filter="Trips">Trips & Adventures</button>
+                        <button class="tab-btn" data-filter="Sweet Moments">Sweet Moments</button>
+                        <button class="tab-btn" data-filter="Milestones">Milestones</button>
+                    </div>
+
+                    <button class="btn btn-primary" id="openAddMemoryModalBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Store New Memory</span>
+                    </button>
+                </div>
+
+                <!-- Memories Grid Container -->
+                <div class="memories-grid" id="memoriesGrid">
+                    <!-- Dynamically rendered by app.js -->
+                </div>
+            </section>
+
+            <!-- Love Notes & Letters (Notes Storage) Section -->
+            <section class="section" id="notes">
+                <div class="section-header">
+                    <span class="section-tag">Heartfelt Words</span>
+                    <h2 class="section-title">Love Notes & Whispers</h2>
+                    <p class="section-desc">
+                        Quiet thoughts, morning affirmations, and letters written from the depths of our hearts.
+                    </p>
+                </div>
+
+                <div class="memories-toolbar">
+                    <div class="category-tabs" id="notesFilterTabs">
+                        <button class="tab-btn active" data-filter="All">All Letters</button>
+                        <button class="tab-btn" data-filter="Ukaasha">From Ukaasha</button>
+                        <button class="tab-btn" data-filter="Haaniya">From Haaniya</button>
+                        <button class="tab-btn" data-filter="Pinned">Pinned Whispers</button>
+                    </div>
+
+                    <button class="btn btn-rose" id="openAddNoteModalBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        <span>Write Love Note</span>
+                    </button>
+                </div>
+
+                <!-- Notes Cards Grid -->
+                <div class="notes-container" id="notesContainer">
+                    <!-- Dynamically rendered by app.js -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-monogram">U&H</div>
+            <p class="footer-quote">"Two souls with but a single thought, two hearts that beat as one."</p>
+            <p class="footer-sub">
+                Crafted with boundless devotion for <strong>Ukaasha & Haaniya</strong> &bull; Protected with Supabase Cloud
+            </p>
+        </footer>
+    </div>
+
+    <!-- ==============================================================================
+         MODALS
+         ============================================================================== -->
+
+    <!-- 1. ADD MEMORY MODAL (Image Upload & Details) -->
+    <div class="modal-backdrop" id="addMemoryModal">
+        <div class="modal-card">
+            <button class="modal-close-btn" data-close="addMemoryModal">&times;</button>
+            <div class="modal-header">
+                <div class="modal-icon">&#128248;</div>
+                <h3 class="modal-title">Store a Memory</h3>
+                <p class="modal-subtitle">Add a cherished photo and heartfelt story to our visual vault</p>
+            </div>
+
+            <form id="addMemoryForm">
+                <div class="form-group">
+                    <label class="form-label">Photo Upload</label>
+                    <div class="file-upload-zone" id="fileDropZone">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--accent-gold); margin-bottom: 8px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 4px;">
+                            <strong>Click to select</strong> or drag and drop your photo here
+                        </p>
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">Supports JPG, PNG, WEBP (Max 10MB)</span>
+                        <input type="file" id="memoryFileInput" accept="image/*" style="display: none;">
+                        <img id="uploadPreview" class="upload-preview" alt="Preview">
+                    </div>
+
+                    <div style="text-align: center; margin: 10px 0; font-size: 0.8rem; color: var(--text-muted);">— OR USE IMAGE URL —</div>
+                    <input type="url" id="memoryUrlInput" class="form-input" placeholder="https://example.com/photo.jpg">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="memoryTitle">Memory Title</label>
+                    <input type="text" id="memoryTitle" class="form-input" placeholder="e.g. Sunset in Our Favorite City" required>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="memoryCategory">Category</label>
+                        <select id="memoryCategory" class="form-select">
+                            <option value="Sweet Moments">Sweet Moments</option>
+                            <option value="Trips">Trips & Adventures</option>
+                            <option value="Milestones">Milestones</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="memoryDate">Date Taken</label>
+                        <input type="date" id="memoryDate" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="memoryCaption">Story / Caption</label>
+                    <textarea id="memoryCaption" class="form-textarea" placeholder="What made this moment unforgettable?"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-rose" style="width: 100%;" id="saveMemoryBtn">
+                    Save to Our Vault
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. ADD NOTE MODAL (Love Letter) -->
+    <div class="modal-backdrop" id="addNoteModal">
+        <div class="modal-card">
+            <button class="modal-close-btn" data-close="addNoteModal">&times;</button>
+            <div class="modal-header">
+                <div class="modal-icon">&#9993;</div>
+                <h3 class="modal-title">Write a Love Letter</h3>
+                <p class="modal-subtitle">Leave a lasting reminder of your affection</p>
+            </div>
+
+            <form id="addNoteForm">
+                <div class="form-group">
+                    <label class="form-label" for="noteTitle">Letter Subject / Title</label>
+                    <input type="text" id="noteTitle" class="form-input" placeholder="e.g. To the love of my life..." required>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label" for="noteAuthor">Written By</label>
+                        <select id="noteAuthor" class="form-select">
+                            <option value="Ukaasha">Ukaasha</option>
+                            <option value="Haaniya">Haaniya</option>
+                            <option value="Together">Both of Us</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="noteMood">Feeling / Mood</label>
+                        <input type="text" id="noteMood" class="form-input" placeholder="e.g. Forever Devoted">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="noteContent">The Letter</label>
+                    <textarea id="noteContent" class="form-textarea" style="min-height: 160px;" placeholder="Write everything that is in your heart..." required></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="notePin" style="width: 18px; height: 18px; accent-color: var(--accent-gold);">
+                    <label for="notePin" style="font-size: 0.9rem; cursor: pointer; color: var(--text-secondary);">
+                        Pin to the top of our letters board
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="saveNoteBtn">
+                    Seal & Send Letter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. SUPABASE CONFIGURATION MODAL -->
+    <div class="modal-backdrop" id="supabaseSettingsModal">
+        <div class="modal-card">
+            <button class="modal-close-btn" data-close="supabaseSettingsModal">&times;</button>
+            <div class="modal-header">
+                <div class="modal-icon">&#9881;</div>
+                <h3 class="modal-title">Supabase Cloud Sync</h3>
+                <p class="modal-subtitle">Connect your Supabase project for cross-device cloud sync and secure authentication</p>
+            </div>
+
+            <div style="background: rgba(197, 155, 109, 0.08); border-left: 3px solid var(--accent-gold); padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-secondary);">
+                <strong>Private Vault Sync:</strong> Enter your Supabase URL & Public Anon Key below. Your photos and love letters will be stored securely in your private cloud database.
+            </div>
+
+            <form id="supabaseConfigForm">
+                <div class="form-group">
+                    <label class="form-label" for="supabaseUrl">Supabase Project URL</label>
+                    <input type="url" id="supabaseUrl" class="form-input" placeholder="https://your-project.supabase.co">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="supabaseAnonKey">Supabase Public Anon Key</label>
+                    <input type="password" id="supabaseAnonKey" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-rose" style="flex: 1;">Save & Connect</button>
+                    <button type="button" class="btn btn-outline" id="disconnectSupabaseBtn">Use Demo Mode</button>
+                </div>
+            </form>
+
+            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-light); font-size: 0.82rem; color: var(--text-muted); text-align: center;">
+                Need the SQL setup script? View <a href="supabase-schema.sql" target="_blank" style="color: var(--accent-gold);">supabase-schema.sql</a> to enable RLS security.
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. EDIT ANNIVERSARY DATE MODAL -->
+    <div class="modal-backdrop" id="anniversaryModal">
+        <div class="modal-card" style="max-width: 440px;">
+            <button class="modal-close-btn" data-close="anniversaryModal">&times;</button>
+            <div class="modal-header">
+                <div class="modal-icon">&#128197;</div>
+                <h3 class="modal-title">Our Relationship Date</h3>
+                <p class="modal-subtitle">Customize the day our journey officially began</p>
+            </div>
+
+            <form id="anniversaryForm">
+                <div class="form-group">
+                    <label class="form-label" for="anniversaryInput">Anniversary Date & Time</label>
+                    <input type="datetime-local" id="anniversaryInput" class="form-input" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Update Counter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. LIGHTBOX PHOTO MODAL -->
+    <div class="modal-backdrop" id="lightboxModal">
+        <div class="modal-card lightbox-card">
+            <button class="modal-close-btn" data-close="lightboxModal" style="background: rgba(0,0,0,0.6); color: #FFF; border: none;">&times;</button>
+            <div class="lightbox-img-container">
+                <img id="lightboxImg" class="lightbox-img" src="" alt="Memory View">
+            </div>
+            <div class="lightbox-details">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div>
+                        <span id="lightboxCategory" style="font-size: 0.8rem; font-weight: 600; color: var(--accent-gold); text-transform: uppercase;"></span>
+                        <h3 id="lightboxTitle" style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-primary);"></h3>
+                    </div>
+                    <span id="lightboxDate" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+                </div>
+                <p id="lightboxCaption" style="font-size: 0.98rem; color: var(--text-secondary); line-height: 1.6;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="supabase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
